@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id             Int      @id @default(autoincrement())
+  name           String
+  birthDate      DateTime
+  license        String
+  photoUrl       String?
+  position       String     // Ex: "Meneur", "Pivot"
+  overallRating  Int        @default(50) // note globale
+
+  categoryId     Int
+  category       Category   @relation(fields: [categoryId], references: [id])
+
+  matchStats     MatchStat[]
+  trainingStats  TrainingStat[]
+  trophies       Trophy[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique // N1A, U18...
+  minAge    Int?
+  maxAge    Int?
+  players   Player[]
+  createdAt DateTime @default(now())
+
+  TrainingSession TrainingSession[]
+
+  Match Match[]
+}
+
+model Match {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  location  String
+  opponent  String
+  category  Category? @relation(fields: [categoryId], references: [id])
+  categoryId Int?
+  matchStats MatchStat[]
+  createdAt DateTime @default(now())
+}
+
+model MatchStat {
+  id         Int     @id @default(autoincrement())
+  match      Match   @relation(fields: [matchId], references: [id])
+  matchId    Int
+  player     Player  @relation(fields: [playerId], references: [id])
+  playerId   Int
+
+  points     Int
+  assists    Int
+  rebounds   Int
+  steals     Int
+  blocks     Int
+  minutes    Float
+
+  shootingPct Float
+  createdAt  DateTime @default(now())
+}
+
+model TrainingSession {
+  id         Int      @id @default(autoincrement())
+  date       DateTime
+  location   String
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  trainingStats TrainingStat[]
+  createdAt  DateTime @default(now())
+}
+
+model TrainingStat {
+  id         Int      @id @default(autoincrement())
+  session    TrainingSession @relation(fields: [sessionId], references: [id])
+  sessionId  Int
+  player     Player   @relation(fields: [playerId], references: [id])
+  playerId   Int
+
+  speed      Float
+  strength   Float
+  jumpHeight Float
+  ballControl Float
+  shootingPct Float
+  createdAt  DateTime @default(now())
+}
+
+model Trophy {
+  id         Int      @id @default(autoincrement())
+  title      String   // Ex: "MVP U18", "Meilleur scoreur"
+  description String?
+  season     String   // Ex: "2024-2025"
+  player     Player   @relation(fields: [playerId], references: [id])
+  playerId   Int
+  createdAt  DateTime @default(now())
+}
